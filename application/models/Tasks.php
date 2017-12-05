@@ -1,84 +1,64 @@
 <?php
 
-class Tasks extends REST_Model {
+defined('BASEPATH') OR exit('No direct script access allowed');
+/**
+ * Modified to use REST client to get port data from our server.
+ */
 
-    public function __construct()
-    {
-            parent::__construct('http://backend.local', 80);
-    }
-    
-    function getCategorizedTasks()
-    {
-        // extract the undone tasks
-        foreach ($this->all() as $task)
+
+class Tasks extends Memory_Model {
+
+        /**
+         * Ctor
+         */
+        public function __construct()
         {
-            if ($task->status != 2)
-                $undone[] = $task;
+                parent::__construct();
+                $this->load();
         }
+        
+        /**
+         * Returns the tasks ordered by their category
+         * 
+         * @return Array of Tasks
+         */
+        function getCategorizedTasks() {
+            // extract the undone tasks
+            foreach ($this->all() as $task) {
+                if ($task->status != 2) {
+                    $undone[] = $task;
+                }
+            }   
 
-        // substitute the category name, for sorting
-        foreach ($undone as $task)
-            $task->group = $this->app->group($task->group);
+            // substitute the category name, for sorting
+            foreach ($undone as $task) {
+                $task->group = $this->app->group($task->group);
+            }
 
-        // order them by category
-        usort($undone, "orderByCategory");
+            // order them by category
+            usort($undone, "orderByCategory");
 
-        // convert the array of task objects into an array of associative objects       
-        foreach ($undone as $task)
-            $converted[] = (array) $task;
+            // convert the array of task objects into an array of associative objects       
+            foreach ($undone as $task) {
+                $converted[] = (array) $task;
+            }
 
-        return $converted;
-    }
+            return $converted;
+        }
+        
+        // provide form validation rules
+        public function rules()
+        {
+            $config = array(
+                ['field' => 'task', 'label' => 'TODO task', 'rules' => 'alpha_numeric_spaces|max_length[64]'],
+                ['field' => 'priority', 'label' => 'Priority', 'rules' => 'integer|less_than[4]'],
+                ['field' => 'size', 'label' => 'Task size', 'rules' => 'integer|less_than[4]'],
+                ['field' => 'group', 'label' => 'Task group', 'rules' => 'integer|less_than[5]'],
+            );
+            return $config;
+        }
     
-        function makeCategorizedPanel($tasks)
-    {
-        $parms = ['display_tasks' => $this->tasks->getCategorizedTasks()];
-        return $this->parser->parse('by_category', $parms, true);
-    }
-
-    /**
-     * Provides form validation rules.
-     */
-    public function rules() {
-        $config = array(
-            [
-                'field' => 'task',
-                'label' => 'TODO task',
-                'rules' => 'alpha_numeric_spaces|max_length[64]'
-            ],
-            [
-                'field' => 'priority',
-                'label' => 'Priority',
-                'rules' => 'integer|less_than[4]'
-            ],
-            [
-                'field' => 'size',
-                'label' => 'Task size',
-                'rules' => 'integer|less_than[4]'
-            ],
-            [
-                'field' => 'group',
-                'label' => 'Task group',
-                'rules' => 'integer|less_than[5]'
-            ]
-        );
-
-        return $config;
-    }
-}
-
-// return -1, 0, or 1 of $a's category name is earlier, equal to, or later than $b's
-function orderByCategory($a, $b)
-{
-    if ($a->group < $b->group)
-        return -1;
-    elseif ($a->group > $b->group)
-        return 1;
-    else
-        return 0;
-}
-
- function load()
+    function load()
     {
         // load the $this->_data array
         // load our data from the REST backend

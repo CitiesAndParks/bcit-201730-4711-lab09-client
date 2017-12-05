@@ -20,6 +20,7 @@ class Views extends Application
         $this->render('template_secondary'); 
     }
     
+    //Make priority panel for the view controller
     function makePrioritizedPanel($tasks) {
         
         // extract the undone tasks
